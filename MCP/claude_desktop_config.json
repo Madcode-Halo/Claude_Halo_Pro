@@ -1,0 +1,37 @@
+{
+  "_comment": "Halo_Pro MCP-Master-Config. In Claude Desktop liegt die echte Datei in %APPDATA%\\Claude\\claude_desktop_config.json. Diese Master-Kopie wird in Phase 5 dorthin kopiert nach Claude-Desktop-Install. Server-Namen mit -pro-Suffix damit kein Konflikt mit Halo bei Parallel-Nutzung.",
+  "mcpServers": {
+    "filesystem-pro": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\Anthropic_Claude\\Halo_Pro"
+      ]
+    },
+    "obsidian-pro": {
+      "command": "uvx",
+      "args": [
+        "mcp-obsidian"
+      ],
+      "env": {
+        "OBSIDIAN_API_KEY": "REPLACE_ME_VIA_halo_credentials_get_obsidian_api_pro",
+        "OBSIDIAN_HOST": "127.0.0.1:27124"
+      }
+    },
+    "halo-pro-archiv": {
+      "command": "D:\\Anthropic_Claude\\Programme\\Python\\python.exe",
+      "args": [
+        "D:\\Anthropic_Claude\\Halo_Pro\\Scripts\\halo_pro_archiv_mcp.py"
+      ]
+    },
+    "powershell": {
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "PowerShell.MCP"
+      ]
+    }
+  }
+}

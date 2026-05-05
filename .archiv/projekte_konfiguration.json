@@ -1,0 +1,42 @@
+{
+  "_kommentar": "Halo_Pro JSONL-Quellen — sowohl Claude Code (claudian-Sessions) als auch Claude Desktop. cwd-basierte Encoding ist Anthropic's Konvention.",
+  "_version": 1,
+  "_aktualisiert": "2026-05-06",
+  "basis_pfad": "C:/Users/dgrom/.claude/projects",
+  "live_file_schutz_sekunden": 5,
+  "projekte": [
+    {
+      "kuerzel": "D--Anthropic-Claude-Halo_Pro",
+      "rolle": "halo_pro_main",
+      "enabled": true,
+      "beschreibung": "claudian-Sessions wenn cwd auf Halo_Pro-Root steht"
+    },
+    {
+      "kuerzel": "D--Anthropic-Claude-Halo_Pro-Vault",
+      "rolle": "halo_pro_vault",
+      "enabled": true,
+      "beschreibung": "claudian-Sessions wenn cwd direkt im Vault steht"
+    }
+  ],
+  "nsfw_marker": {
+    "_kommentar": "Halo_Pro indexiert keine NSFW-Inhalte (gibts auch nicht in der Pro-Variante)",
+    "cwd_patterns": [".private", "/nsfw/", "\\nsfw\\"]
+  },
+  "skip_message_typen": [
+    "system",
+    "permission-mode",
+    "last-prompt",
+    "ai-title",
+    "file-history-snapshot",
+    "queue-operation",
+    "attachment"
+  ],
+  "index_message_typen": [
+    "user",
+    "assistant"
+  ],
+  "claude_desktop_quellen": {
+    "_kommentar": "Phase 5b TODO: nach Claude Desktop Install den echten JSONL-Pfad verifizieren und hier eintragen. Vermutlich %LOCALAPPDATA%\\Packages\\Claude_*\\LocalCache\\ — muss aber gecheckt werden.",
+    "verifizieren_nach_install": true
+  }
+}

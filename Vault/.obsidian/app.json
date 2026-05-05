@@ -1,0 +1,11 @@
+{
+  "attachmentFolderPath": "07 Anhänge",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "alwaysUpdateLinks": true,
+  "promptDelete": true,
+  "showLineNumber": true,
+  "spellcheck": false,
+  "strictLineBreaks": false,
+  "tabSize": 2
+}

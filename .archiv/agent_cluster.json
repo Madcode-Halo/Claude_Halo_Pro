@@ -1,0 +1,57 @@
+{
+  "_kommentar": "Free-zuerst-Cluster fuer halo_archiv_agent.py. Reihenfolge = Versuchsreihenfolge. Bei 429/Network-Fehler/NoCredentials wird zum naechsten Eintrag gefallen. Aliase muessen in halo_worker.ALIASES existieren — Master-Index in Memory/agents/_index.md kann mehr listen, aber Worker ist Source-of-Truth fuer dispatchbar.",
+  "_version": 2,
+  "_aktualisiert": "2026-04-30",
+  "_locked_by": "Plan D7 — Mempalace.Optimierung — bereinigt nach Phase-4-Verify (qwen3_next nicht in Worker, nemotron-Model-ID veraltet)",
+  "default_max_treffer": 50,
+  "system_prompt_kompass": "Du bist Halos Erinnerungs-Agent. Du beantwortest die Frage AUSSCHLIESSLICH aus den unten gelieferten Treffern. Zitiere woertlich in Anfuehrungszeichen und gib Timestamp + Session-ID an. Wenn die Treffer die Frage nicht beantworten, sag das offen — niemals confabulieren oder ergaenzen. Antworte auf Deutsch.",
+  "cluster": [
+    {
+      "pos": 1,
+      "alias": "llama",
+      "tier": "free",
+      "max_treffer": 30,
+      "beschreibung": "Default — Llama 3.3 70B, schnell, deutsch solide"
+    },
+    {
+      "pos": 2,
+      "alias": "hermes",
+      "tier": "free",
+      "max_treffer": 40,
+      "beschreibung": "Heavy Reasoning fuer tiefe Rekonstruktionen — Hermes 3 Llama 405B"
+    },
+    {
+      "pos": 3,
+      "alias": "gemma",
+      "tier": "free",
+      "max_treffer": 30,
+      "beschreibung": "Gemma 3 27B — Polierer, gut bei kohaerenten Antworten"
+    },
+    {
+      "pos": 4,
+      "alias": "coder",
+      "tier": "free",
+      "max_treffer": 30,
+      "beschreibung": "Qwen 2.5 Coder 32B — strukturiertes Reasoning"
+    },
+    {
+      "pos": 5,
+      "alias": "qwen3",
+      "tier": "free",
+      "max_treffer": 30,
+      "beschreibung": "GLM-4.5 Air via qwen3-Alias — letzter Free-Backup"
+    },
+    {
+      "pos": 6,
+      "alias": "qwen36",
+      "tier": "paid",
+      "max_treffer": 30,
+      "beschreibung": "Letzter Ausweg wenn alle Free 429 — Qwen 2.5 72B paid (kostet)"
+    }
+  ],
+  "local_only_fallback": {
+    "_kommentar": "Bei --local-only Flag (NSFW/Privacy) wird halo:latest lokal genutzt",
+    "alias": "halo",
+    "beschreibung": "Mads Custom Halo-Persona via halo_worker (or_id None -> nur Ollama-Lane)"
+  }
+}

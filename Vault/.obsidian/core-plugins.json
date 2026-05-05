@@ -1,0 +1,18 @@
+{
+  "switcher": true,
+  "word-count": true,
+  "backlink": true,
+  "page-preview": true,
+  "outline": true,
+  "starred": false,
+  "daily-notes": true,
+  "tag-pane": true,
+  "command-palette": true,
+  "file-explorer": true,
+  "global-search": true,
+  "graph": true,
+  "file-recovery": true,
+  "bookmarks": true,
+  "templates": true,
+  "outgoing-link": true
+}
