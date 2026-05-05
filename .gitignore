@@ -15,6 +15,13 @@ Vault/.obsidian/workspace*
 Vault/.obsidian/cache/
 Vault/.obsidian/workspace.json
 
+# Plugin-State mit moeglichen Secrets (API-Keys, Tokens, Cert-Private-Keys)
+# WICHTIG: Local REST API speichert apiKey + RSA privateKey hier!
+Vault/.obsidian/plugins/*/data.json
+
+# claudian Plugin-State (User-Settings, persoenlich)
+Vault/.claudian/
+
 # Logs und Temporäres
 Logs/
 *.log
