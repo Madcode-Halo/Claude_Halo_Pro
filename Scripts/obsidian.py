@@ -29,6 +29,12 @@ import urllib.error
 import ssl
 from pathlib import Path
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 # ── Konfiguration ────────────────────────────────────────────────────────────
 
 OBSIDIAN_URL = "https://127.0.0.1:27124"
