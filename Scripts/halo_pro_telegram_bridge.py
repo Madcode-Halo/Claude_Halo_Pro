@@ -250,8 +250,52 @@ def _process_message(msg: dict) -> tuple[str, dict] | None:
         except Exception as e:
             parts.append(f"📎 Document FAIL: {e}")
 
-    # Voice / Audio / Video — als unbekannt markieren (in Phase X ausbauen)
-    for media_kind in ("voice", "audio", "video", "video_note", "sticker", "animation"):
+    # Voice — Download + Transkription via Halos shared Whisper-Wrapper
+    if "voice" in msg:
+        v = msg["voice"]
+        try:
+            info = _api_get("getFile", {"file_id": v["file_id"]})
+            file_path = info["result"]["file_path"]
+            ext = Path(file_path).suffix or ".ogg"
+            duration = v.get("duration", "?")
+            out = date_dir / f"voice_{msg_id}_{int(time.time())}{ext}"
+            size = _download(file_path, out)
+            voice_part = (
+                f"🎙️ Voice gespeichert: `{out.relative_to(ROOT).as_posix()}` "
+                f"({size}B, {duration}s)"
+            )
+            # Transkription via Halos Wrapper (subprocess, defaults: medium/cpu/int8)
+            try:
+                r = subprocess.run(
+                    [
+                        PYTHON_EXE,
+                        "D:/Anthropic_Claude/Halo/Scripts/transcribe_voice.py",
+                        str(out),
+                        "--language", "de",
+                        "--model", "medium",
+                        "--device", "cpu",
+                        "--compute-type", "int8",
+                    ],
+                    capture_output=True, text=True, timeout=120,
+                    encoding="utf-8",
+                )
+                transcript = (r.stdout or "").strip()
+                if r.returncode == 0 and transcript:
+                    voice_part += f"\n📝 Transkript: {transcript}"
+                elif r.returncode != 0:
+                    voice_part += f"\n⚠️ Transkription failed (rc={r.returncode}): {(r.stderr or '')[:300]}"
+                else:
+                    voice_part += "\n⚠️ Transkription leer (Wrapper rc=0 aber kein stdout)"
+            except subprocess.TimeoutExpired:
+                voice_part += "\n⚠️ Transkription Timeout (>120s)"
+            except Exception as e:
+                voice_part += f"\n⚠️ Transkription ERR: {e}"
+            parts.append(voice_part)
+        except Exception as e:
+            parts.append(f"🎙️ Voice FAIL: {e}")
+
+    # Andere Media — als unbekannt markieren (Phase X ausbauen)
+    for media_kind in ("audio", "video", "video_note", "sticker", "animation"):
         if media_kind in msg:
             parts.append(f"⚠️ {media_kind} empfangen — noch nicht implementiert")
 
