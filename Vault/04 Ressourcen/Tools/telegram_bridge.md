@@ -134,7 +134,7 @@ print("delivered" if send_text(msg) else "FAIL")
 PYEOF
 ```
 
-Echte Newlines (siehe [[../../00 Kontext/Schreibstil]]) bleiben so erhalten.
+Echte Newlines (siehe [[Schreibstil]]) bleiben so erhalten.
 
 ## Monitor-Befehl (Hook generiert ihn dynamisch)
 
@@ -187,6 +187,6 @@ Beide Daemons sehen nur ihre eigenen Telegram-Updates (unterschiedliche Tokens).
 
 ## Verwandte MDs
 
-- [[../../00 Kontext/Schreibstil]] — Telegram-Antwort-Stil (echte Newlines, kein Log-Slang)
-- [[../../00 Kontext/Reflexe]] — Reflex „Telegram-Inbox" (beim Session-Start checken)
+- [[Schreibstil]] — Telegram-Antwort-Stil (echte Newlines, kein Log-Slang)
+- [[Reflexe]] — Reflex „Telegram-Inbox" (beim Session-Start checken)
 - [[git]] — vor Daemon-Modifikationen committen

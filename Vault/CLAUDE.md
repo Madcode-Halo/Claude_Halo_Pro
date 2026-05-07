@@ -34,9 +34,9 @@ Was bei Halo bleibt:
 - **02 Projekte/**: Aktive Kunden-Projekte, Webseiten, Business-Vorhaben. Mit konkretem Ziel und Enddatum. Eine .md pro Projekt; Unterordner nur wenn ein Projekt mehrere Files braucht.
 - **03 Bereiche/**: Laufende Verantwortungsbereiche ohne Enddatum (Akquise, Buchhaltung, Wartung-Kunden-Sites, Weiterbildung). Jeder Bereich ist ein eigener Ordner mit gleichnamiger Start-MD.
 - **04 Ressourcen/**: Referenzmaterial.
-  - `Tools/`: Werkzeug-Karten (git, obsidian, konversations_archiv, sparc, masterplan, webdev_stack, claude_design, nodejs, impeccable)
-  - `Templates/`: Projekt-Template, Kunden-Template, Meeting-Template, Decision-Template
-  - `Decisions/`: Wichtige Entscheidungen pro Topic (eine MD pro Decision)
+  - `Tools/`: Werkzeug-Karten — aktuell vorhanden: claude_design, git, impeccable, konversations_archiv, masterplan, nodejs, sparc, telegram_bridge, telegram_listener, webdev_stack_2026. (TODO: obsidian-Werkzeug-Karte fehlt noch.)
+  - `Templates/`: Projekt-Template, Kunden-Template, Meeting-Template, Decision-Template — **aktuell leer, TODO**.
+  - `Decisions/`: Wichtige Entscheidungen pro Topic (eine MD pro Decision). Aktuell: `2026-05-06 Halo_Pro Architektur.md`.
 - **05 Daily Notes/**: Tagesprotokoll. Format `YYYY-MM-DD.md` (sortiert chronologisch). Continuity-Brücke zwischen Sessions.
 - **06 Archiv/**: Abgeschlossene Projekte, inaktive Bereiche.
 - **07 Anhänge/**: Bilder, PDFs, Medien (Obsidian legt das automatisch ab).
@@ -76,6 +76,7 @@ Das ist die **Brücke zwischen Sessions und Frontends** (Obsidian ↔ Claude Des
 2. `obsidian.py search` über aktive Projekte (`02 Projekte/`)
 3. `01 Inbox/Brain Dump.md` checken — wenn Items drin: kurz erwähnen, anbieten zu sortieren
 4. Bei Frontend-Wechsel zusätzlich: `archiv_suche(since="X hours ago")` für letzten Stand
+5. **Automatisch in claudian** (seit 2026-05-08): `halo_pro_telegram_hook.py` triggert Backlog-Read-Reflex bei jeder neuen Session — letzte 10 telegram-events seit letztem Pointer als Summary in `additionalContext`. Kein manueller Schritt nötig.
 
 ## Werkzeuge
 
