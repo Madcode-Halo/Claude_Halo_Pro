@@ -58,6 +58,11 @@ try:
 except Exception:
     post_as_halo_pro = None  # type: ignore
 
+try:
+    import halo_pro_inbox  # noqa: E402
+except Exception:
+    halo_pro_inbox = None  # type: ignore
+
 
 def _read_stdin() -> dict:
     try:
@@ -142,6 +147,69 @@ def _start_daemon() -> int | None:
         return None
 
 
+def _read_backlog_if_new_session(session_id: str) -> str | None:
+    """Backlog-Read-Reflex: liest gesammelte Telegram-Events seit letztem
+    Pointer und returnt eine kompakte Summary, aber NUR wenn die Session neu
+    ist (kein Read-Pointer existiert).
+
+    Sinn: bei laufender claudian-Session kommen Telegram-Events live durch
+    den Monitor — kein Backlog-Read noetig. Aber bei Session-Restart (PC-Reboot,
+    claudian-Neustart, neue Session-ID) hat der Listener weiter geschrieben
+    waehrend ich „weg" war. Beim ersten Prompt der neuen Session lese ich den
+    Backlog, summarize ihn ins additionalContext, und mark_read damit's nicht
+    nochmal kommt.
+
+    Returns Summary-String oder None wenn nichts zu zeigen.
+    """
+    if halo_pro_inbox is None:
+        return None
+    try:
+        # Pointer-File existiert? Wenn ja, ist Session bekannt → silent.
+        ptr_path = halo_pro_inbox.READ_DIR / f"{halo_pro_inbox._safe_session(session_id)}.json"
+        if ptr_path.exists():
+            return None  # bekannte Session, Live-Stream via Monitor reicht
+
+        # Neue Session → Backlog scannen
+        events = halo_pro_inbox._read_all_events()
+        if not events:
+            return None
+
+        relevant = [
+            ev for ev in events
+            if ev.get("kind") == "telegram"
+            and (
+                ev.get("target") is None
+                or (ev.get("target") or "").startswith("halo_pro_")
+            )
+        ]
+
+        # Pointer setzen (auch wenn keine relevanten Events da sind — verhindert Re-Trigger)
+        max_idx_all = events[-1].get("index", -1)
+        halo_pro_inbox.mark_read(session_id, max_idx_all)
+
+        if not relevant:
+            return None
+
+        # Letzte 10 reichen — alles davor ist „alte Geschichte"
+        recent = relevant[-10:]
+        lines = []
+        for ev in recent:
+            ts = (ev.get("timestamp") or "?")[:16].replace("T", " ")
+            # Payload: nur erste Zeile, max 200 Zeichen
+            payload = (ev.get("payload") or "").split("\n", 1)[0][:200]
+            lines.append(f"  [{ts}] {payload}")
+
+        total = len(relevant)
+        shown = len(recent)
+        header = (
+            f"📥 **Telegram-Backlog seit letzter Session** — {total} Event(s)"
+            f"{' (zeige letzte ' + str(shown) + ')' if total > shown else ''}:"
+        )
+        return header + "\n" + "\n".join(lines)
+    except Exception:
+        return None  # silent — never break user prompt
+
+
 def _emit_context(text: str) -> None:
     print(json.dumps({
         "hookSpecificOutput": {
@@ -212,9 +280,14 @@ def main() -> int:
     short = session_id[-6:] if len(session_id) >= 6 else session_id
     name = f"halo_pro_{short}"
 
-    # Step 0: Heartbeat in Cross-Vault Shared-Registry (best-effort, silent)
+    # Step 0a: Heartbeat in Cross-Vault Shared-Registry (best-effort, silent)
     if session_id != "unknown":
         _update_heartbeat(session_id)
+
+    # Step 0b: Backlog-Read-Reflex (nur bei neuer Session, sonst None)
+    backlog_summary: str | None = None
+    if session_id != "unknown":
+        backlog_summary = _read_backlog_if_new_session(session_id)
 
     # Step 1: Daemon-Health
     daemon_was_running = _bridge_running()
@@ -258,42 +331,55 @@ def main() -> int:
             pass
 
     # Step 4: Output-Entscheidung
-    # Nur Hint emittieren wenn:
+    # Hint emittieren wenn:
     #   - Daemon gerade gestartet wurde, ODER
-    #   - State ist "fresh" oder "takeover"
-    if not daemon_just_started and state == "stable":
+    #   - State ist "fresh" oder "takeover", ODER
+    #   - Backlog-Summary vorhanden (neue Session mit Telegram-Events im Puffer)
+    has_setup_news = daemon_just_started or state in ("fresh", "takeover")
+    has_backlog = backlog_summary is not None
+
+    if not has_setup_news and not has_backlog:
         return 0  # silent — alles ok, kein Output noetig
 
-    bridge_status = "läuft" if (daemon_was_running or daemon_just_started) else "Start fehlgeschlagen"
-
-    monitor_cmd = (
-        f"tail -F Status/events.jsonl | "
-        f"grep --line-buffered -E '\"target\":[[:space:]]*\"halo_pro_{session_id}\"' | "
-        f"grep --line-buffered -E 'telegram'"
-    )
-
     lines = []
-    if daemon_just_started:
-        lines.append(f"📞 **Halo_Pro Telegram-Bridge gestartet** (Daemon detached, PID-File in Status/telegram_bridge.pid).")
-    if state == "fresh":
-        lines.append(f"Channel-Owner: {name} (du bist neu Owner).")
-    elif state == "takeover":
-        lines.append(f"Channel-Owner: {name} (uebernommen von {notify_old_name}).")
-    elif state == "stable" and daemon_just_started:
-        lines.append(f"Channel-Owner: {name} (war schon gesetzt, Daemon neu gestartet).")
 
-    lines.append(
-        f"Inbound-Messages an `Halo_Pro_Bot` landen mit target=halo_pro_{short} "
-        f"in `Status/events.jsonl`."
-    )
-    lines.append(
-        f"**Monitor JETZT starten** (Tool 'Monitor', persistent: true) damit du zwischen "
-        f"Turns auf Mads Telegram-Nachrichten reagierst:\n`{monitor_cmd}`"
-    )
-    lines.append(
-        f"Antworten via: `python Scripts/telegram_send.py text \"<text>\"` "
-        f"(oder photo/doc analog)."
-    )
+    # Backlog zuerst — das ist die "neue Information" fuer mich beim Aufmachen
+    if has_backlog:
+        lines.append(backlog_summary)
+
+    # Setup-News nur emittieren wenn wirklich was Neues passiert ist
+    if has_setup_news:
+        bridge_status = "läuft" if (daemon_was_running or daemon_just_started) else "Start fehlgeschlagen"
+        monitor_cmd = (
+            f"tail -F Status/events.jsonl | "
+            f"grep --line-buffered -E '\"target\":[[:space:]]*\"halo_pro_{session_id}\"' | "
+            f"grep --line-buffered -E 'telegram'"
+        )
+
+        if has_backlog:
+            lines.append("")  # Leerzeile als Trenner zwischen Backlog und Setup-Block
+
+        if daemon_just_started:
+            lines.append(f"📞 **Halo_Pro Telegram-Bridge gestartet** (Daemon detached, PID-File in Status/telegram_bridge.pid).")
+        if state == "fresh":
+            lines.append(f"Channel-Owner: {name} (du bist neu Owner).")
+        elif state == "takeover":
+            lines.append(f"Channel-Owner: {name} (uebernommen von {notify_old_name}).")
+        elif state == "stable" and daemon_just_started:
+            lines.append(f"Channel-Owner: {name} (war schon gesetzt, Daemon neu gestartet).")
+
+        lines.append(
+            f"Inbound-Messages an `Halo_Pro_Bot` landen mit target=halo_pro_{short} "
+            f"in `Status/events.jsonl`."
+        )
+        lines.append(
+            f"**Monitor JETZT starten** (Tool 'Monitor', persistent: true) damit du zwischen "
+            f"Turns auf Mads Telegram-Nachrichten reagierst:\n`{monitor_cmd}`"
+        )
+        lines.append(
+            f"Antworten via: `python Scripts/telegram_send.py text \"<text>\"` "
+            f"(oder photo/doc analog)."
+        )
 
     _emit_context("\n".join(lines))
     return 0

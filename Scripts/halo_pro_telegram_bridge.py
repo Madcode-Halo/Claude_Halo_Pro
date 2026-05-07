@@ -193,9 +193,19 @@ def _process_message(msg: dict) -> tuple[str, dict] | None:
     sender_label = "mad"
 
     chat = msg.get("chat") or {}
+    chat_type = chat.get("type")
+
+    # Bot-Bridge cover nur 1:1-DMs an Halo_Pro_Bot.
+    # Group/Supergroup/Channel-Posts kommen exklusiv ueber Halos User-API-Listener
+    # in unsere events.jsonl (Variante A). Ohne Skip wuerden Mad-Group-Posts
+    # zweimal landen (einmal hier via getUpdates, einmal via Listener) — Doppel-Event-Rauschen.
+    if chat_type != "private":
+        _log(f"SKIP non-private chat: type={chat_type!r} chat_id={chat.get('id')!r} title={chat.get('title')!r} (Listener cover diese Domaene)")
+        return None
+
     chat_meta = {
         "chat_id": chat.get("id"),
-        "chat_type": chat.get("type"),
+        "chat_type": chat_type,
         "chat_title": chat.get("title"),
         "sender_id": sender_id,
         "sender_label": sender_label,
