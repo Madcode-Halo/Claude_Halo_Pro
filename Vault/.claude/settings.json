@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:/Anthropic_Claude/Programme/Python/python.exe D:/Anthropic_Claude/Halo_Pro/Scripts/halo_pro_telegram_hook.py"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Monitor(*)",
+      "Bash(D:/Anthropic_Claude/Programme/Python/python.exe *)",
+      "Bash(python *)"
+    ]
+  }
+}

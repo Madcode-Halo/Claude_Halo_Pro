@@ -14,6 +14,10 @@ credentials.db
 Vault/.obsidian/workspace*
 Vault/.obsidian/cache/
 Vault/.obsidian/workspace.json
+Vault/.obsidian/graph.json
+
+# Telegram-Bridge Runtime-State (PID, Offset, Owner-Lock, Event-Log, Read-Pointer)
+Status/
 
 # Plugin-State mit moeglichen Secrets (API-Keys, Tokens, Cert-Private-Keys)
 # WICHTIG: Local REST API speichert apiKey + RSA privateKey hier!

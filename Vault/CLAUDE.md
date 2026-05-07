@@ -83,7 +83,12 @@ Das ist die **Brücke zwischen Sessions und Frontends** (Obsidian ↔ Claude Des
 **Scripts in Halo_Pro/Scripts/:**
 - `halo_credentials.py --list/--get/--add` — on-demand Credentials (NIE direkt in `.credentials/logins.md` lesen)
 - `obsidian.py` — Vault-Operations via REST
-- `telegram_send.py` — Outbound an Mads Telegram
+- `telegram_send.py` — Outbound an Mads Telegram (`@Halo_Pro_Bot`)
+- `halo_pro_telegram_bridge.py` — Inbound-Daemon (Long-Poll, lazy: Hook startet ihn beim ersten claudian-Prompt). CLI: `--status`/`--once`/`--stop`
+- `halo_pro_telegram_hook.py` — UserPromptSubmit-Hook (Vault/.claude/settings.json registriert). Startet Daemon idempotent + setzt Owner-Lock automatisch + emittiert Monitor-Hint
+- `halo_pro_inbox.py` — Event-Bus (`Status/events.jsonl`) mit Multi-Session Read-Pointers
+
+**Telegram-Bridge (seit 2026-05-07):** echter Bidi-Chat in der Telegram-App. Mad schreibt an `Halo_Pro_Bot`, ich antworte dort zurück. In claudian: Echtzeit via Hook + Monitor-Tool (sub-Sekunden-Wakeup zwischen Turns). In Claude Desktop: passiv — Inbox lesen via `halo_pro_inbox.get_recent_events()` beim Session-Start. Details: [[04 Ressourcen/Tools/telegram_bridge|Werkzeug-Karte Telegram-Bridge]]. Schreibstil-Regeln für Telegram-Antworten (echte Newlines, kein Log-Slang): [[00 Kontext/Schreibstil]].
 
 **Vault-Skills in `.claude/skills/`:**
 - `halo_pro_persona/` — Initial-Onboarding-Workflow für leere Vaults
