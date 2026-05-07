@@ -265,6 +265,13 @@ def _process_message(msg: dict) -> tuple[str, dict] | None:
                 f"({size}B, {duration}s)"
             )
             # Transkription via Halos Wrapper (subprocess, defaults: medium/cpu/int8)
+            # Wichtig: CREATE_NO_WINDOW verhindert dass auf Windows ein Console-
+            # Fenster aufpoppt waehrend python.exe das Wrapper-Skript ausfuehrt.
+            # Der Daemon-Parent ist pythonw.exe (no-console), aber subprocess
+            # mit python.exe (console-subsystem) wuerde sonst ein neues Fenster
+            # vorne aufmachen — UX-Stoerung, von Mad 2026-05-08 gemeldet.
+            CREATE_NO_WINDOW = 0x08000000
+            sub_flags = CREATE_NO_WINDOW if sys.platform == "win32" else 0
             try:
                 r = subprocess.run(
                     [
@@ -278,6 +285,7 @@ def _process_message(msg: dict) -> tuple[str, dict] | None:
                     ],
                     capture_output=True, text=True, timeout=120,
                     encoding="utf-8",
+                    creationflags=sub_flags,
                 )
                 transcript = (r.stdout or "").strip()
                 if r.returncode == 0 and transcript:
