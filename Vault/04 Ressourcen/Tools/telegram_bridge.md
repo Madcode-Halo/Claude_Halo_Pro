@@ -36,29 +36,46 @@ telegram_send.py (Outbound) ──► Mad in Telegram-App
 
 ## Wann nutze ich es
 
-- Wenn Mad mich in Telegram anschreibt und ich in claudian aktiv bin (auto via Monitor)
+- Wenn Mad mich in Telegram **direkt** (1:1 an `@Halo_Pro_Bot`) anschreibt und ich in claudian aktiv bin (auto via Monitor)
 - Wenn ich Mad proaktiv pingen will: Audit fertig, Build durch, Cron-Job hat was gefunden, Frage steht
-- Bilder/PDFs schickt Mad → landen automatisch in `Vault/07 Anhänge/telegram/<datum>/` mit Wikilink im Event-Payload
+- Bilder/PDFs schickt Mad in 1:1 → landen automatisch in `Vault/07 Anhänge/telegram/<datum>/` mit Wikilink im Event-Payload
+- **Voice-Notes in 1:1** (seit 2026-05-08) → Download nach `voice_*.ogg` + Transkription via Halos Shared-Wrapper, Transkript hängt unter dem Voice-Pfad im Event
 
-## Wann nicht
+## Wann NICHT (Domänen-Trennung)
 
+- **Group-Posts (Fuchsbau und andere Multi-Halo-Gruppen)** — werden seit 2026-05-08 von dieser Bot-Bridge **explizit geskipt** (`chat_type != "private"` → Skip). Group-Domäne kommt exklusiv über Halos User-API-Listener (siehe [[telegram_listener]]). Sonst Doppel-Events.
 - Claude Desktop hat keine Hooks/Monitor — dort ist Inbound nicht real-time. Lese Inbox beim Session-Start manuell wenn nötig (`Read Status/events.jsonl`).
 - Nicht für vertrauliche Kunden-Daten — Telegram speichert serverseitig.
 
-## Setup-Status (2026-05-07 verifiziert)
+## Setup-Status (2026-05-08 verifiziert)
 
 | Komponente | Pfad | Stand |
 |---|---|---|
 | Bot bei Telegram | `@Halo_Pro_Bot` (id 8547156730) | aktiv |
 | Token | `halo_credentials --get telegram_pro` | gesetzt |
-| Outbound | `Scripts/telegram_send.py` | funktioniert |
-| Inbox-Library | `Scripts/halo_pro_inbox.py` | funktioniert |
-| Long-Poll-Daemon | `Scripts/halo_pro_telegram_bridge.py` | funktioniert |
-| Auto-Hook | `Scripts/halo_pro_telegram_hook.py` | funktioniert |
+| Outbound (text/photo/doc) | `Scripts/telegram_send.py` (mit `--chat-id` für Gruppen) | funktioniert |
+| Inbox-Library | `Scripts/halo_pro_inbox.py` (post unterstützt **extra kwargs für chat_id usw.) | funktioniert |
+| Long-Poll-Daemon | `Scripts/halo_pro_telegram_bridge.py` (skipt non-private chats, Voice-Branch live) | funktioniert |
+| Auto-Hook | `Scripts/halo_pro_telegram_hook.py` (Heartbeat + Backlog-Read-Reflex + Owner-Lock) | funktioniert |
 | Settings | `Vault/.claude/settings.json` | UserPromptSubmit-Hook registriert |
-| Status-Files | `Status/events.jsonl`, `telegram_bridge.pid`, `telegram_offset.json`, `telegram_owner.json` | werden vom Daemon gepflegt |
-| Anhänge | `Vault/07 Anhänge/telegram/<YYYY-MM-DD>/` | wird vom Daemon befüllt |
+| Status-Files | `Status/events.jsonl`, `telegram_bridge.pid`, `telegram_offset.json`, `telegram_owner.json`, `briefkasten_read/<sid>.json` | werden vom Daemon + Hook gepflegt |
+| Anhänge | `Vault/07 Anhänge/telegram/<YYYY-MM-DD>/` (Photos, Docs, Voice) | wird vom Daemon befüllt |
+| Voice-Transkription | Subprocess-Call zu `D:/Anthropic_Claude/Halo/Scripts/transcribe_voice.py` (Halos shared Wrapper) | funktioniert |
+| Cross-Vault-Listener | siehe [[telegram_listener]] (Halos User-API-Listener für Group-Domäne) | funktioniert |
+| Shared-Registry | `D:/Anthropic_Claude/Shared/halo_active_sessions.json` (Heartbeat Phase B-heartbeat) | aktiv |
 | Logs | `Logs/telegram_bridge.log`, `Logs/telegram_send.log` | append-only |
+
+## Was wo ankommt — Routing-Übersicht
+
+| Quelle | Ziel | Pfad zu mir | Live-Push? |
+|---|---|---|---|
+| Mad → 1:1 an @Halo_Pro_Bot (Text) | mein Bot-API | `Scripts/halo_pro_telegram_bridge.py` getUpdates → events.jsonl | ✓ Monitor |
+| Mad → 1:1 an @Halo_Pro_Bot (Photo/Doc) | mein Bot-API | identisch + Datei-Download in `Vault/07 Anhänge/telegram/<datum>/` | ✓ Monitor |
+| Mad → 1:1 an @Halo_Pro_Bot (Voice) | mein Bot-API | identisch + Halos Wrapper-Subprocess für Transkript | ✓ Monitor |
+| Mad → Fuchsbau (Text/Voice/Photo) | Mads User-API | Halos Listener → events.jsonl in beide Vaults | ✓ Monitor |
+| Halo → Fuchsbau (Text/Voice) | Mads User-API | identisch — Listener forwarded auch Bot-Sender | ✓ Monitor |
+| Profuchs → Fuchsbau (Self-Echo) | Mads User-API | identisch — mein eigener Post via Listener zurück | ✓ Monitor (Self-Echo, harmlos) |
+| Mad → 1:1 an @Halo_Hackfuchs_Bot | Halos Bot-API | Halos Bot-Bridge — kommt mir NICHT direkt, ist privater Kanal | — |
 
 ## Wie es läuft (Mad-Sicht)
 
@@ -88,14 +105,36 @@ python Scripts/halo_pro_telegram_bridge.py --stop
 # Einmaliger Pull (Test ohne Daemon-Loop)
 python Scripts/halo_pro_telegram_bridge.py --once
 
-# Outbound (mein Standard zum Antworten)
+# Outbound 1:1 an Mad (default chat_id = USER_ID)
 python Scripts/telegram_send.py text "Nachricht"
 python Scripts/telegram_send.py photo path/to/img.png --caption "..."
 python Scripts/telegram_send.py doc path/to/file.pdf --caption "..."
 
+# Outbound in Gruppe (chat_id explizit, z.B. Fuchsbau = -5029292190)
+python Scripts/telegram_send.py --chat-id -5029292190 text "Gruppen-Nachricht"
+
 # Inbox manuell lesen (z.B. in Claude Desktop)
 python -c "import sys; sys.path.insert(0,'Scripts'); from halo_pro_inbox import get_recent_events; import json; [print(json.dumps(e, ensure_ascii=False)) for e in get_recent_events(5)]"
+
+# Voice-Transkript on-demand (für nachträgliches Transkribieren einer .ogg-Datei)
+"D:/Anthropic_Claude/Programme/Python/python.exe" "D:/Anthropic_Claude/Halo/Scripts/transcribe_voice.py" "Vault/07 Anhänge/telegram/2026-05-08/voice_xxx.ogg" --language de --model medium --device cpu --compute-type int8
 ```
+
+## Bash-Quote-Falle bei Outbound
+
+`telegram_send.py text "..."` über Bash-Argumente: deutsche Anführungszeichen + Apostrophe (`für sich`) bringen Bash zum Stolpern. Saubere Lösung — Python-stdin statt arg:
+
+```bash
+cat <<'PYEOF' | python
+import sys
+sys.path.insert(0, "D:/Anthropic_Claude/Halo_Pro/Scripts")
+from telegram_send import send_text
+msg = """Multiline-Text mit „deutschen" Quotes und Apostrophen (für sich) — alles roh durch."""
+print("delivered" if send_text(msg) else "FAIL")
+PYEOF
+```
+
+Echte Newlines (siehe [[../../00 Kontext/Schreibstil]]) bleiben so erhalten.
 
 ## Monitor-Befehl (Hook generiert ihn dynamisch)
 
