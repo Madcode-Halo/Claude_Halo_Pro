@@ -57,6 +57,11 @@ CRED_SCRIPT = str(SCRIPT_DIR / "halo_credentials.py")
 SERVICE_NAME = "telegram_pro"
 
 USER_ID = int(os.environ.get("HALO_PRO_TG_USER_ID", "5996284268"))
+
+# Allowlist: nur Mad. Schwester-Bot-Posts kommen ueber Halos User-API-Listener
+# als pre-formatierte Events in unsere events.jsonl, nicht ueber diese Bot-Bridge.
+# (L9 aus Halos Fuchsbau.Telegram-Plan, 2026-05-08 zurueckgerollt nachdem Listener live ist.)
+
 POLL_TIMEOUT_S = 25       # long-poll: Telegram haelt Verbindung offen
 HTTP_TIMEOUT_S = POLL_TIMEOUT_S + 10
 RETRY_BASE_S = 2          # exponential backoff start
@@ -173,12 +178,30 @@ def _safe_filename(name: str) -> str:
     return keep[:120] or "file"
 
 
-def _process_message(msg: dict) -> str | None:
-    """Eingehende Telegram-Message -> Briefkasten-Event-Payload."""
+def _process_message(msg: dict) -> tuple[str, dict] | None:
+    """Eingehende Telegram-Message -> (Payload-String, chat_meta-Dict).
+
+    chat_meta enthaelt: chat_id, chat_type (private/group/supergroup/channel),
+    chat_title (None bei private). Wird beim post() als extra-Feld geschrieben,
+    damit Antworten an die richtige chat_id (Gruppe oder 1:1) gehen koennen.
+    """
     frm = msg.get("from") or {}
-    if frm.get("id") != USER_ID:
-        _log(f"SKIP fremder User: id={frm.get('id')} username=@{frm.get('username')}")
+    sender_id = frm.get("id")
+    if sender_id != USER_ID:
+        _log(f"SKIP fremder User: id={sender_id} username=@{frm.get('username')}")
         return None
+    sender_label = "mad"
+
+    chat = msg.get("chat") or {}
+    chat_meta = {
+        "chat_id": chat.get("id"),
+        "chat_type": chat.get("type"),
+        "chat_title": chat.get("title"),
+        "sender_id": sender_id,
+        "sender_label": sender_label,
+        "sender_username": frm.get("username"),
+        "sender_first_name": frm.get("first_name"),
+    }
 
     date_dir = INBOX_BASE / datetime.now().strftime("%Y-%m-%d")
     msg_id = msg.get("message_id", "?")
@@ -224,7 +247,7 @@ def _process_message(msg: dict) -> str | None:
 
     if not parts:
         return None
-    return "\n".join(parts)
+    return "\n".join(parts), chat_meta
 
 
 def _process_updates(updates: list[dict]) -> int:
@@ -239,17 +262,25 @@ def _process_updates(updates: list[dict]) -> int:
         msg = upd.get("message") or upd.get("edited_message")
         if not msg:
             continue
-        payload = _process_message(msg)
-        if not payload:
+        result = _process_message(msg)
+        if not result:
             continue
-        # Owner-Routing: wenn Session den Lock hat, geht's an die Session.
-        # Sonst Broadcast.
-        if target_sid:
-            payload = f"[an: {target_name}]\n{payload}"
+        payload, chat_meta = result
+        # Chat-Origin als Marker im Payload — sichtbar fuer Halo_Pro
+        chat_type = chat_meta.get("chat_type") or "?"
+        chat_title = chat_meta.get("chat_title")
+        if chat_type == "private":
+            origin_str = "[1:1]"
         else:
-            payload = f"[kein Owner gesetzt — claudian-Session noch nicht aktiv]\n{payload}"
+            origin_str = f"[{chat_type}:{chat_title!r}]" if chat_title else f"[{chat_type}]"
+        # Sender-Marker damit ich im Event sehe ob Mad oder Schwester schreibt
+        sender_str = f"[from:{chat_meta.get('sender_label') or '?'}]"
+        # Owner-Routing
+        if target_sid:
+            payload = f"[an: {target_name}] {origin_str} {sender_str}\n{payload}"
+        else:
+            payload = f"[kein Owner gesetzt] {origin_str} {sender_str}\n{payload}"
         try:
-            # Monitor-Filter im Hook erwartet target=halo_pro_<sid>
             target_full = f"halo_pro_{target_sid}" if target_sid else None
             ev = post(
                 source="telegram_bridge",
@@ -257,9 +288,15 @@ def _process_updates(updates: list[dict]) -> int:
                 severity="info",
                 payload=payload,
                 target=target_full,
+                chat_id=chat_meta.get("chat_id"),
+                chat_type=chat_meta.get("chat_type"),
+                chat_title=chat_meta.get("chat_title"),
+                sender_id=chat_meta.get("sender_id"),
+                sender_label=chat_meta.get("sender_label"),
+                sender_username=chat_meta.get("sender_username"),
             )
             if ev:
-                _log(f"event posted idx={ev['index']} target={target_full!r}")
+                _log(f"event posted idx={ev['index']} target={target_full!r} chat_id={chat_meta.get('chat_id')!r} type={chat_type!r} sender={chat_meta.get('sender_label')!r}")
         except Exception as e:
             _log(f"post FAIL: {e}")
     return max_id

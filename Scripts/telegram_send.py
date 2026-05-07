@@ -196,6 +196,11 @@ def send_document(doc_path: str | Path, caption: str | None = None, target_id: i
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Halo_Pro Telegram Outbound")
+    parser.add_argument(
+        "--chat-id", type=int, default=None,
+        help="Ziel-chat_id (Gruppen-ID, sonst geht es an Mads 1:1 Chat). "
+             "Negative IDs sind Gruppen/Supergroups, positive sind User-IDs."
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_text = sub.add_parser("text", help="Sende Text")
@@ -212,10 +217,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ok = False
     if args.cmd == "text":
-        ok = send_text(args.message)
+        ok = send_text(args.message, target_id=args.chat_id)
     elif args.cmd == "photo":
-        ok = send_photo(args.path, args.caption)
+        ok = send_photo(args.path, args.caption, target_id=args.chat_id)
     elif args.cmd == "doc":
-        ok = send_document(args.path, args.caption)
+        ok = send_document(args.path, args.caption, target_id=args.chat_id)
     print("delivered" if ok else "FAILED — Logs/telegram_send.log pruefen")
     sys.exit(0 if ok else 1)

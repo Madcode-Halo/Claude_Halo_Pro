@@ -44,6 +44,14 @@ BRIDGE_SCRIPT = SCRIPT_DIR / "halo_pro_telegram_bridge.py"
 PYTHON_EXE = "D:/Anthropic_Claude/Programme/Python/python.exe"
 PYTHONW_EXE = "D:/Anthropic_Claude/Programme/Python/pythonw.exe"
 
+# Cross-Vault Shared-Registry fuer Halos User-API-Listener
+# (Halo schreibt pro Telegram-Update Events in halos[*].events_jsonl mit target_prefix+sid)
+SHARED_REGISTRY = Path("D:/Anthropic_Claude/Shared/halo_active_sessions.json")
+MY_VAULT = "D:/Anthropic_Claude/Halo_Pro/"
+MY_EVENTS_JSONL = "D:/Anthropic_Claude/Halo_Pro/Status/events.jsonl"
+MY_TARGET_PREFIX = "halo_pro_"
+MY_NAME = "Halo Profuchs"
+
 sys.path.insert(0, str(SCRIPT_DIR))
 try:
     from halo_pro_inbox import post_as_halo_pro  # noqa: E402
@@ -143,6 +151,58 @@ def _emit_context(text: str) -> None:
     }, ensure_ascii=False))
 
 
+def _update_heartbeat(session_id: str) -> None:
+    """Updated meinen Eintrag in der Cross-Vault Shared-Registry.
+
+    Halos User-API-Listener liest diese Registry und schreibt pro Telegram-
+    Group-Update ein Event in halos[*].events_jsonl mit target_prefix+sid.
+    Heartbeat haelt meinen Eintrag frisch — Listener droppt SIDs deren
+    last_seen >24h alt ist.
+
+    Best-effort: bei Lese-/Schreib-Fehlern silent skip — Hook darf User-Prompt
+    nie brechen. Atomic write via .tmp + os.replace verhindert Race mit Halos
+    eigenem Heartbeat-Update.
+    """
+    try:
+        if not SHARED_REGISTRY.parent.exists():
+            return  # Shared-Verzeichnis nicht da — Listener-Setup nicht aktiv
+        my_key = f"{MY_TARGET_PREFIX}{session_id}"
+        now_iso = datetime.now().isoformat(timespec="seconds")
+
+        # Read current state (mit Fallback wenn File fehlt oder kaputt)
+        if SHARED_REGISTRY.exists():
+            try:
+                data = json.loads(SHARED_REGISTRY.read_text(encoding="utf-8"))
+            except Exception:
+                data = {}
+        else:
+            data = {
+                "_doc": "Cross-Vault Halo-Session-Registry. Phase A: hardcoded. Phase B: Heartbeat-Hook updated last_seen, Listener droppt Halos >24h stale.",
+                "_format_version": "1.0",
+            }
+
+        halos = data.setdefault("halos", {})
+        existing = halos.get(my_key, {})
+
+        halos[my_key] = {
+            "name": MY_NAME,
+            "vault": MY_VAULT,
+            "events_jsonl": MY_EVENTS_JSONL,
+            "target_prefix": MY_TARGET_PREFIX,
+            "last_seen": now_iso,
+            "phase": "B-heartbeat",
+            **{k: v for k, v in existing.items()
+               if k not in {"name", "vault", "events_jsonl", "target_prefix", "last_seen", "phase"}},
+        }
+
+        # Atomic write
+        tmp = SHARED_REGISTRY.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, SHARED_REGISTRY)
+    except Exception:
+        pass  # silent — never break user prompt
+
+
 def main() -> int:
     try:
         data = _read_stdin()
@@ -151,6 +211,10 @@ def main() -> int:
     session_id = data.get("session_id") or "unknown"
     short = session_id[-6:] if len(session_id) >= 6 else session_id
     name = f"halo_pro_{short}"
+
+    # Step 0: Heartbeat in Cross-Vault Shared-Registry (best-effort, silent)
+    if session_id != "unknown":
+        _update_heartbeat(session_id)
 
     # Step 1: Daemon-Health
     daemon_was_running = _bridge_running()

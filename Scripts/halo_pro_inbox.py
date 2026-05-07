@@ -186,11 +186,15 @@ def _write_pointer(session_id: str, last_read_index: int) -> None:
 def post(source: str, kind: str, severity: str, payload: str,
          dedup_key: str | None = None,
          target: str | None = None,
-         source_host: str | None = None) -> dict | None:
+         source_host: str | None = None,
+         **extra) -> dict | None:
     """Event an events.jsonl anhaengen.
 
     Returns das geschriebene Event — oder None wenn Dedup greift.
     Raises ValueError bei ungueltigem kind/severity/leerem source.
+
+    **extra: zusaetzliche Felder die ins Event landen (z.B. chat_id, chat_type
+    fuer Telegram-Gruppen). Werden direkt ins JSON gemerged.
     """
     if not source:
         raise ValueError("source darf nicht leer sein")
@@ -219,6 +223,7 @@ def post(source: str, kind: str, severity: str, payload: str,
         "timestamp": ts,
         "dedup_key": dedup_key,
         "payload": payload,
+        **extra,
     }
     _append_event(event)
     return event
