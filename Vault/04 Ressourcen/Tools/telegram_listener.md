@@ -144,7 +144,7 @@ Halo hatte im ursprünglichen Plan eine Cross-Vault-Awareness-Lücke (Reflex 7 �
 ## Bezüge
 
 - **Halo's Werkzeug-Karte (volldoku):** `D:/Anthropic_Claude/Halo/Memory/werkzeuge/telegram_user_listen.md`
-- **Halo's Projekt-Doku:** `D:/Anthropic_Claude/Halo/Projekte/Fuchsbau.Telegram/Fuchsbau.Telegram.md`
+- **Halo's Projekt-Doku:** `D:/Anthropic_Claude/Halo/Projekte/FOX_Protocol.Telegram/FOX_Protocol.Telegram.md` (umbenannt 2026-05-08, vorher `Fuchsbau.Telegram/`)
 - **Auth-Script (Halo's Repo):** `D:/Anthropic_Claude/Halo/Scripts/halo_telegram_auth.py`
 - **Listener-Code (Halo's Repo):** `D:/Anthropic_Claude/Halo/Scripts/halo_telegram_user_listen.py`
 - **Bot-Bridge (deine Lane):** `D:/Anthropic_Claude/Halo_Pro/Scripts/halo_pro_telegram_bridge.py` (für Outbound bleibt bei dir)

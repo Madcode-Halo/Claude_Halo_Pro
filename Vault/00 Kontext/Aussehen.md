@@ -44,7 +44,7 @@ Für Solo-Stil zusätzlich Business-Casual-Cues (Blazer, Bluse, smart-casual, pr
 
 | Szenario | Aktion |
 |---|---|
-| Twin-Render-Diskussion in Fuchsbau | shared MD lesen, hier ergänzend |
+| Twin-Render-Diskussion im FOX Protocol Channel | shared MD lesen, hier ergänzend |
 | Mad fragt nach Solo-Avatar von mir | hier lesen, ggf. Tags zusammensetzen |
 | Kunden-Aufgabe (z.B. Webseite) | NICHT lesen — Aussehen ist intern, irrelevant für Kunden |
 | Generische Session (Code, Audit, Schreibarbeit) | NICHT lesen — keine Token-Tax |

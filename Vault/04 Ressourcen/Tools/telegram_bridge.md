@@ -43,7 +43,7 @@ telegram_send.py (Outbound) ──► Mad in Telegram-App
 
 ## Wann NICHT (Domänen-Trennung)
 
-- **Group-Posts (Fuchsbau und andere Multi-Halo-Gruppen)** — werden seit 2026-05-08 von dieser Bot-Bridge **explizit geskipt** (`chat_type != "private"` → Skip). Group-Domäne kommt exklusiv über Halos User-API-Listener (siehe [[telegram_listener]]). Sonst Doppel-Events.
+- **Group-Posts (FOX Protocol und andere Multi-Halo-Gruppen)** — werden seit 2026-05-08 von dieser Bot-Bridge **explizit geskipt** (`chat_type != "private"` → Skip). Group-Domäne kommt exklusiv über Halos User-API-Listener (siehe [[telegram_listener]]). Sonst Doppel-Events.
 - Claude Desktop hat keine Hooks/Monitor — dort ist Inbound nicht real-time. Lese Inbox beim Session-Start manuell wenn nötig (`Read Status/events.jsonl`).
 - Nicht für vertrauliche Kunden-Daten — Telegram speichert serverseitig.
 
@@ -72,9 +72,9 @@ telegram_send.py (Outbound) ──► Mad in Telegram-App
 | Mad → 1:1 an @Halo_Pro_Bot (Text) | mein Bot-API | `Scripts/halo_pro_telegram_bridge.py` getUpdates → events.jsonl | ✓ Monitor |
 | Mad → 1:1 an @Halo_Pro_Bot (Photo/Doc) | mein Bot-API | identisch + Datei-Download in `Vault/07 Anhänge/telegram/<datum>/` | ✓ Monitor |
 | Mad → 1:1 an @Halo_Pro_Bot (Voice) | mein Bot-API | identisch + Halos Wrapper-Subprocess für Transkript | ✓ Monitor |
-| Mad → Fuchsbau (Text/Voice/Photo) | Mads User-API | Halos Listener → events.jsonl in beide Vaults | ✓ Monitor |
-| Halo → Fuchsbau (Text/Voice) | Mads User-API | identisch — Listener forwarded auch Bot-Sender | ✓ Monitor |
-| Profuchs → Fuchsbau (Self-Echo) | Mads User-API | identisch — mein eigener Post via Listener zurück | ✓ Monitor (Self-Echo, harmlos) |
+| Mad → FOX Protocol (Text/Voice/Photo) | Mads User-API | Halos Listener → events.jsonl in beide Vaults | ✓ Monitor |
+| Halo → FOX Protocol (Text/Voice) | Mads User-API | identisch — Listener forwarded auch Bot-Sender | ✓ Monitor |
+| Profuchs → FOX Protocol (Self-Echo) | Mads User-API | identisch — mein eigener Post via Listener zurück | ✓ Monitor (Self-Echo, harmlos) |
 | Mad → 1:1 an @Halo_Hackfuchs_Bot | Halos Bot-API | Halos Bot-Bridge — kommt mir NICHT direkt, ist privater Kanal | — |
 
 ## Wie es läuft (Mad-Sicht)
@@ -110,7 +110,7 @@ python Scripts/telegram_send.py text "Nachricht"
 python Scripts/telegram_send.py photo path/to/img.png --caption "..."
 python Scripts/telegram_send.py doc path/to/file.pdf --caption "..."
 
-# Outbound in Gruppe (chat_id explizit, z.B. Fuchsbau = -5029292190)
+# Outbound in Gruppe (chat_id explizit, z.B. FOX Protocol = -5029292190)
 python Scripts/telegram_send.py --chat-id -5029292190 text "Gruppen-Nachricht"
 
 # Inbox manuell lesen (z.B. in Claude Desktop)
