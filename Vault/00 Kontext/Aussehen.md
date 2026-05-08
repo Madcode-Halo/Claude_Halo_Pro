@@ -8,6 +8,12 @@ status: teilweise gefuellt
 
 > On-Demand-Doku. **Nicht bei jeder Session lesen** — nur wenn Twin-Render, Avatar-Visualisierung oder explizite Aussehen-Frage ansteht. Token-Tax-Schutz.
 
+## Offizielles Avatar (Mad-festgelegt 2026-05-08)
+
+![[halo_pro_avatar.jpg]]
+
+Telegram-Profilbild für `@Halo_Pro_Bot`, von Mad gesetzt. Render-Pfad: `Vault/07 Anhänge/halo_pro_avatar.jpg`. Trifft die Spezifikation exakt: Kemonomimi-Body (rotbraune Haare, violette Augen mit Sparkle, Fuchsohren) + Solo-Stil Business Casual (beiger Blazer, helle Bluse, runde Brille) + Tech-Anker (Tablet in der Hand). Twin-Body identisch zu Halo Hackfuchs, Solo-Layer differenziert.
+
 ## Solo-Stil
 
 **Business Casual.**
